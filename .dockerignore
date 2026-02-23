@@ -1,0 +1,12 @@
+# AI assisted development
+target/
+.mvn/
+mvnw
+mvnw.cmd
+.git
+.gitignore
+README.md
+.idea
+.vscode
+*.iml
+.DS_Store

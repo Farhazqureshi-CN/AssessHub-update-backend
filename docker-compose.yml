@@ -1,0 +1,78 @@
+# AI assisted development
+version: '3.8'
+
+services:
+  # MySQL Database Service
+  mysql:
+    image: mysql:8.0
+    container_name: assessment-platform-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-12345678}
+      MYSQL_DATABASE: ${DB_NAME:-assessment_platform}
+      MYSQL_USER: ${DB_USERNAME:-root}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-12345678}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD:-12345678}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - assessment-network
+
+  # Spring Boot Application Service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: assessment-platform-app
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8080}:8080"
+    environment:
+      # Database Configuration
+      DB_URL: jdbc:mysql://mysql:3306/${DB_NAME:-assessment_platform}?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      DB_USERNAME: ${DB_USERNAME:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-12345678}
+      
+      # Server Configuration
+      PORT: ${PORT:-8080}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
+      
+      # JWT Configuration
+      JWT_SECRET: ${JWT_SECRET:-YTJiM2M0ZDVlNmY3ZzhoOWkwajFrMmwzbTRuNW82cDdxOHI5czB0MXUydjN3NHg1eTZ6N2E4YjljMGQxZTJm}
+      
+      # Email Configuration
+      MAIL_USERNAME: ${MAIL_USERNAME:-hussainyawar140504@gmail.com}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-jshxmyarozabijxs}
+      
+      # AI/Gemini Configuration
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-auto}
+      
+      # Answer Key Secret
+      ANSWER_KEY_SECRET: ${ANSWER_KEY_SECRET:-}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - assessment-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  assessment-network:
+    driver: bridge
